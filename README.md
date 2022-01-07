@@ -85,6 +85,26 @@ The combined javadoc target, rather than recapitulating the HTML for every
 class of every component, instead uses 301 redirects via an Apache `.htaccess`
 file, which point at the unmodified unpacked javadoc for that component.
 
+This approach has several advantages:
+
+* The `javadoc` tool has a single reproducible link target, so new javadoc
+  builds more quickly, with classes from dependencies linked with permalinks.
+
+* Every available javadoc for every component managed by every version of
+  pom-scijava is accessible from a canonical location, with stable links.
+
+* Old javadoc using version-agnostic (and therefore irreproducible) links
+  is adjusted during unpacking to use stable links instead&mdash;e.g.,
+  `/SciJava/org/scijava/Context.html` &rarr;
+  `/org.scijava/pom-scijava/30.0.0/org/scijava/Context.html` which then
+  redirects to `org.scijava/scijava-common/2.85.0/org/scijava/Context.html`.
+
+  The various version-agnostic prefixes from the prior incarnation of the
+  javadoc.scijava.org website now redirect to the latest pom-scijava javadoc
+  prefix&mdash;e.g., `/SciJava/` &rarr; `/org.scijava/pom-scijava/latest/`
+  &rarr; `org.scijava/pom-scijava/31.1.0`, with the `latest` path updating
+  over time to always redirect to the newest BOM version hosted on the site.
+
 ------------------------------------------------------------------------
 
 [Bill of Materials]:      https://imagej.net/BOM
