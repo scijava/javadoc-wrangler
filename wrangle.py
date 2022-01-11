@@ -139,7 +139,8 @@ def mvn(goal: Sequence[str], pom=None, die_on_error=True, **kwargs):
 
 def squash(path: Path):
     if not Path(path).exists():
-        die(f"No such file: {path}")
+        log.info(f"Skipping squash of non-existent {path}")
+        return
     try:
         writefile(path, sorted(set(readfile(path))))
     except Exception as e:
