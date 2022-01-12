@@ -123,7 +123,7 @@ def execute(cmd: Sequence[str], die_on_error=True):
     if result.returncode != 0:
         error_message = f"Command {cmd[0]} failed with exit code {result.returncode}"
         if die_on_error:
-            die(error_message)
+            die(error_message + ":\n" + result.stdout.decode())
         else:
             raise RuntimeError(error_message)
     return result.stdout.decode().splitlines(keepends=True)
