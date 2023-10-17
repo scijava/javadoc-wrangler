@@ -51,6 +51,31 @@ def die(message, code=1):
 
 # -- Classes --
 
+class PackageIndex:
+    def __init__(self):
+        self.modules = {}
+        self.unnamed = []
+        self.module = self.unnamed
+
+    def resetModule(self):
+        self.module = self.unnamed
+
+    def appendLine(self, line):
+        if line.startswith("module:"):
+            name = line[len("module:"):]
+            self.module = self.modules.get(name, [])
+            if not self.module:
+                self.modules[name] = self.module
+        else:
+            self.module.append(line)
+
+    def lines(self):
+        lines = sorted(set(self.unnamed))
+        for key, value in self.modules.items():
+            lines.append("module:" + key)
+            lines.extend(sorted(set(value)))
+        return lines
+
 class GAV:
     def __init__(self, g, a, v):
         self.g = g
@@ -186,7 +211,7 @@ def unpack_javadoc(c: GAV, jarFile: Path, javadocDir: Path):
             log.debug(e)
 
 
-def process_component(c: GAV, bom: GAV, bomDir: Path):
+def process_component(c: GAV, bom: GAV, bomDir: Path, index: PackageIndex):
     # Obtain the javadoc classifier JAR.
     jarFile = jarDir / f"{c.a}-{c.v}-javadoc.jar"
     if not jarFile.exists():
@@ -218,7 +243,10 @@ def process_component(c: GAV, bom: GAV, bomDir: Path):
         if componentPackageIndex.exists():
             bomPackageIndex = bomDir / packageIndexName
             try:
-                writefile(bomPackageIndex, readfile(componentPackageIndex), append=True)
+                index.resetModule()
+                for line in readfile(componentPackageIndex):
+                    index.appendLine(line)
+                # writefile(bomPackageIndex, readfile(componentPackageIndex), append=True)
             except Exception as e:
                 log.error(f"Exception appending {packageIndexName} for {c}")
                 log.debug(e)
@@ -273,18 +301,21 @@ def process_bom(bom: GAV):
         writefile(bomComponentsFile, output[start:end+1])
     bomComponents = XML(bomComponentsFile)
 
+    index = PackageIndex()
+    i = 0
     for dep in bomComponents.elements('dependencies/dependency'):
         c = GAV(dep.find('groupId').text,
                 dep.find('artifactId').text,
                 dep.find('version').text)
         if c.valid:
-            process_component(c, bom, bomDir)
+            process_component(c, bom, bomDir, index)
         else:
             log.warning(f"Invalid component: {c}")
 
-    # Sort package-list, element-list, and htaccess files, squashing duplicates.
-    squash(bomDir / "package-list")
-    squash(bomDir / "element-list")
+    # Write concatenated element-list.
+    writefile(bomDir / "element-list", index.lines())
+
+    # Sort htaccess file, squashing duplicates.
     squash(bomDir / ".htaccess")
 
     log.info(f"Done processing BOM {bom}")
